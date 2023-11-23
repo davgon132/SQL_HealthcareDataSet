@@ -1,0 +1,85 @@
+-- Retrieve the names, ages, and their respective age percentiles
+   #e.g., 25th percentile, 50th percentile) based on the overall age distribution. --
+SELECT Name,age,
+PERCENT_RANK() OVER (ORDER BY age) AS AgePercentile
+FROM healthcare_dataset;
+#: Express Age Percentiles as percentages
+SELECT Name, Age,
+PERCENT_RANK() OVER (ORDER BY Age) * 100 AS AgePercentile
+FROM healthcare_dataset;
+-- Find the distinct medical conditions present in the dataset along with 
+   #the names of patients who have more than one medical condition. 
+   #Include a count of patients with multiple conditions. --
+SELECT `Medical Condition`,`Name`, COUNT(*) AS ConditionCount
+FROM healthcare_dataset 
+GROUP BY `Name`,`Medical Condition`
+HAVING COUNT(*) > 1;
+-- Calculate the average billing amount for each gender within each insurance provider. --
+SELECT Gender,`Insurance Provider`,
+AVG(`Billing Amount`) AS AverageBillingAmount
+FROM healthcare_dataset
+GROUP BY Gender,`Insurance Provider`;
+-- Identify patients who have medical conditions that 
+-- occur less than three times in the dataset. --
+SELECT `Name`,`Medical Condition`,COUNT(*) AS ConditionCount 
+FROM healthcare_dataset
+GROUP BY `Name`,`Medical Condition`
+HAVING ConditionCount < 3;
+-- List the top three doctors with the highest total billing amounts. 
+   #Include the count of distinct patients each doctor has treated. --
+SELECT Doctor,
+	Count(DISTINCT `Name`) AS DistinctPatients,
+	COUNT(`Billing Amount`) AS TotalBillingAmount
+FROM `healthcare_dataset`
+GROUP BY DOCTOR
+ORDER BY TotalBillingAmount DESC
+LIMIT 3;
+-- Calculate the average billing amount for each admission type and analyze the 
+   #trend over the years. Show the percentage change in average billing amount from the 
+   #previous year for each admission type.--
+SELECT `Admission Type`,
+		YEAR(`Date of Admission`) AS AdmissionYear,
+        AVG(`Billing Amount`) AS AverageBillingAmount,
+        (AVG(`Billing Amount`) - LAG(AVG(`Billing Amount`)) OVER (PARTITION BY `Admission Type` ORDER BY YEAR(`Date of Admission`))) * 100 AS PercentageChange
+FROM healthcare_dataset
+GROUP BY `Admission Type`, AdmissionYear
+ORDER BY `Admission Type`, AdmissionYear;
+-- Identify insurance providers covering patients with diverse medical conditions. 
+   #List the top three insurance providers with the highest count of distinct medical conditions covered. --
+SELECT `Insurance Provider`,
+		COUNT(DISTINCT `Medical Condition`) AS DistinctMedicalConditions
+FROM healthcare_dataset
+GROUP BY `Insurance Provider`
+ORDER BY DistinctMedicalConditions DESC
+LIMIT 3;
+
+-- Determine the age group (e.g., 20-30, 31-40) with the highest percentage of 
+   #patients having abnormal test results. --
+-- Determine age group with highest percentage of patients having abnormal test results
+SELECT
+    FLOOR(Age / 10) * 10 AS AgeGroup,
+    COUNT(*) AS TotalPatients,
+    SUM(CASE WHEN `Test Results` = 'Abnormal' THEN 1 ELSE 0 END) AS PatientsWithAbnormalResults,
+    (SUM(CASE WHEN `Test Results` = 'Abnormal' THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS PercentageAbnormal
+FROM
+    healthcare_dataset
+GROUP BY
+    AgeGroup
+ORDER BY
+    PercentageAbnormal DESC
+LIMIT 1;
+-- List doctors who have treated patients admitted in more than one calendar year. 
+   #Include the count of distinct patients for each doctor. --
+SELECT Doctor,
+	   COUNT(DISTINCT YEAR(`Date of Admission`)) AS DistinctYears,
+       COUNT(DISTINCT `Name`) AS DistinctPatients
+FROM healthcare_dataset
+GROUP BY DOCTOR
+HAVING DistinctYears > 1;
+-- Calculate the average length of stay for patients in each room number. --
+SELECT `Room Number`,
+		AVG(DATEDIFF(`Discharge Date`, `Date of Admission`)) AS AverageLengthOfStay
+FROM healthcare_dataset
+GROUP BY `Room Number`;
+
+SELECT * FROM healthcare_dataset
